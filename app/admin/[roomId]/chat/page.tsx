@@ -7,14 +7,11 @@ import { ArrowUp, Sparkles, Settings2, SlidersHorizontal, User, X, PenTool, Imag
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import RoomHeader from "@/components/RoomHeader";
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+// import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { restartRoom } from "@/lib/firebaseService";
+import { useRoomChat, type Message } from "@/hooks/useRoomChat";
 
-interface Message {
-  id: string;
-  role: "user" | "ai";
-  text: string;
-}
+// Message type is now imported from useRoomChat
 
 const SettingsContent = ({
   creativity,
@@ -137,16 +134,16 @@ export default function ChatPage({
   const { roomId } = use(params);
   const router = useRouter();
 
-  // Core states
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Core states from useRoomChat
+  const { messages, isGenerating, sendMessage } = useRoomChat(roomId, "admin");
   const [input, setInput] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
   const [showSettings, setShowSettings] = useState(false); // Mobile sheet
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Desktop sidebar
 
   // Setting states
   const [creativity, setCreativity] = useState([50]);
   const [temperature, setTemperature] = useState([7]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Generation status text rotation
   const generationSteps = [
@@ -190,23 +187,17 @@ export default function ChatPage({
   const handleSubmit = () => {
     if (!input.trim() || isGenerating) return;
 
-    const userMsg: Message = { id: Date.now().toString(), role: "user", text: input.trim() };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setIsGenerating(true);
+    // Map UI values to worker-friendly synthesis parameters
+    // Creativity 0-100 -> Strength 0.40 (Literal) to 0.90 (Abstract)
+    const strength = 0.4 + (creativity[0] / 100) * 0.5;
 
-    // Simulate generation delay and dummy AI response
-    setTimeout(() => {
-      setIsGenerating(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: "ai",
-          text: "I've analyzed your context alongside the model parameters. The drawings look incredibly imaginative, representing a strong synthesis across the participants."
-        }
-      ]);
-    }, 4000);
+    // Temperature 0.0-1.0 (0-10 on slider) -> Guidance Scale 1.0 (Random) to 15.0 (Precise)
+    // Note: Lower guidance scale in SD usually means more "artistic freedom" or unpredictability
+    // Here we map 0 (Random) to lower guidance and 10 (Precise) to higher guidance
+    const guidance_scale = 1.0 + (temperature[0] / 10) * 14.0;
+
+    sendMessage(input.trim(), { strength, guidance_scale });
+    setInput("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -285,82 +276,96 @@ export default function ChatPage({
                 </div>
               )}
 
-              {/* Chat Message Timeline */}
-              {messages.map((msg) => (
-                <motion.div
-                  layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  key={msg.id}
-                  className={`flex items-start gap-4 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
-                >
-                  <div className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center ${msg.role === "ai" ? "bg-secondary" : "bg-black"}`}>
-                    {msg.role === "ai" ? (
-                      <PenTool className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <User className="h-4 w-4 text-white" />
-                    )}
-                  </div>
+              {messages.map((msg, idx) => {
+                const isLast = idx === messages.length - 1;
+                const showLiveGeneration = isLast && isGenerating && msg.role === "assistant";
 
-                  <div className={`flex flex-col gap-1.5 ${msg.role === "user" ? "items-end" : "items-start"}`}>
-                    <span className="text-xs font-semibold text-muted-foreground px-1">
-                      {msg.role === "ai" ? "Sketch AI" : "You"}
-                    </span>
-                    <div className={`px-4 py-2.5 rounded-xl max-w-xl text-sm leading-relaxed ${msg.role === "user"
-                      ? "bg-white border border-border text-foreground"
-                      : "bg-transparent text-foreground font-medium"
-                      }`}>
-                      {msg.text}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-
-              {/* Claude-style Generating State */}
-              <AnimatePresence mode="popLayout">
-                {isGenerating && (
+                return (
                   <motion.div
                     layout
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20, scale: 0.98 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-start gap-4 mt-2"
+                    key={msg.id}
+                    className={`flex items-start gap-4 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
                   >
-                    <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                    </div>
-                    <div className="flex flex-col gap-4 pt-1">
-                      <div className="flex items-center gap-3">
-                        <DotLottieReact
-                          src="/drawing.lottie"
-                          loop
-                          autoplay
-                          className="h-6"
-                        />
+                    <motion.div
+                      layout
+                      className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center overflow-hidden transition-colors ${msg.role === "assistant" ? "bg-secondary" : "bg-black"}`}
+                      animate={showLiveGeneration ? {
+                        backgroundColor: ["#f3f4f6", "#e5e7eb", "#f3f4f6"],
+                        scale: [1, 1.05, 1],
+                      } : {}}
+                      transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                    >
+                      {msg.role === "assistant" ? (
+                        <motion.div
+                          animate={showLiveGeneration ? {
+                            rotate: [0, -45, 0],
+                          } : { rotate: 0 }}
+                          transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                        >
+                          <PenTool className="h-4 w-4 text-muted-foreground" />
+                        </motion.div>
+                      ) : (
+                        <User className="h-4 w-4 text-white" />
+                      )}
+                    </motion.div>
 
-                        <div className="h-5 overflow-hidden">
-                          <AnimatePresence mode="wait">
-                            <motion.span
-                              key={stepIndex}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.3 }}
-                              className="text-sm text-muted-foreground font-medium block"
-                            >
-                              {generationSteps[stepIndex]}
-                            </motion.span>
-                          </AnimatePresence>
-                        </div>
-                      </div>
+                    <div className={`flex flex-col gap-1.5 ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                      <span className="text-xs font-semibold text-muted-foreground px-1">
+                        {msg.role === "assistant" ? "Sketch AI" : "You"}
+                      </span>
+                      <div className={`px-4 py-2.5 rounded-xl max-w-xl text-sm leading-relaxed ${msg.role === "user"
+                        ? "bg-white border border-border text-foreground"
+                        : "bg-transparent text-foreground font-medium"
+                        }`}>
 
-                      <div className="w-[240px] h-[240px] max-w-full bg-secondary/50 rounded-lg animate-pulse flex items-center justify-center border-1 border-border shrink-0">
-                        <Image className="h-10 w-10 text-muted-foreground opacity-20" />
+                        {showLiveGeneration ? (
+                          <div className="flex flex-col gap-4">
+                            <div className="flex items-center">
+
+                              <div className="h-5 overflow-hidden min-w-[150px]">
+                                <AnimatePresence mode="wait">
+                                  <motion.span
+                                    key={stepIndex}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="text-sm text-muted-foreground font-bold block whitespace-nowrap"
+                                  >
+                                    {generationSteps[stepIndex]}
+                                  </motion.span>
+                                </AnimatePresence>
+                              </div>
+                            </div>
+                            <div className="w-[240px] h-[240px] bg-secondary/50 rounded-2xl animate-pulse flex items-center justify-center border-2 border-dashed border-border shrink-0 shadow-inner">
+                              <Image className="h-10 w-10 text-muted-foreground opacity-20" />
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className={msg.role === "assistant" ? "text-muted-foreground italic" : ""}>{msg.text}</div>
+                            {msg.resultImage && (
+                              <div
+                                className="mt-4 rounded-2xl overflow-hidden border-2 border-dashed border-border p-1.5 bg-secondary/20 w-[240px] h-[240px] shrink-0 cursor-zoom-in transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                                onClick={() => setSelectedImage(msg.resultImage!)}
+                              >
+                                <img
+                                  src={msg.resultImage}
+                                  alt="AI Result"
+                                  className="w-full h-full object-cover rounded-xl shadow-lg"
+                                />
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   </motion.div>
-                )}
-              </AnimatePresence>
+                );
+              })}
+
 
               <div ref={chatBottomRef} className="h-4 opacity-0 w-full" />
             </motion.div>
@@ -441,6 +446,45 @@ export default function ChatPage({
               <div className="h-6" />
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Image Modal */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4 backdrop-blur-md"
+            onClick={() => setSelectedImage(null)}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-6 right-6 text-white hover:bg-white/20 rounded-full h-12 w-12"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedImage(null);
+              }}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative aspect-square w-full max-w-[512px] bg-secondary/10 rounded-3xl overflow-hidden border-4 border-primary"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={selectedImage}
+                alt="AI Result Full"
+                className="w-full h-full object-contain "
+              />
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
