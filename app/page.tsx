@@ -1,65 +1,229 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { Pencil, ArrowRight, PenTool } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { createRoom, verifyOtp } from "@/lib/firebaseService";
+
+export default function AdminLoginPage() {
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [step, setStep] = useState<"email" | "otp">("email");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  const handleRequestOtp = async () => {
+    if (!email.trim() || !email.includes("@")) {
+      setError("Please enter a valid email");
+      return;
+    }
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send code");
+      }
+
+      setStep("otp");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyAndCreate = async () => {
+    if (!otp.trim() || otp.length < 6) {
+      setError("Please enter the 6-digit code");
+      return;
+    }
+    setLoading(true);
+    setError("");
+
+    try {
+      const result = await verifyOtp(email.trim(), otp.trim());
+      if (!result.valid) {
+        throw new Error(result.error || "Invalid code");
+      }
+
+      // Valid OTP. Create room.
+      const room = await createRoom(email.trim());
+      router.push(`/admin/${room.id}`);
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="flex flex-1 flex-col items-center justify-center bg-white px-4">
+
+      <div className="mb-12 flex items-center gap-2">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+          <PenTool className="h-5 w-5 text-white" />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        <span className="text-2xl  tracking-tighter">Sketch</span>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-md"
+      >
+        <Card className="border-1 border-border shadow-bold rounded-xl overflow-hidden">
+          <CardHeader className="text-left pb-6 pt-8">
+            <CardTitle className="text-xl font-extrabold tracking-tight">
+              Sign in as Admin
+            </CardTitle>
+          </CardHeader>
+
+          <CardContent className="pt-2">
+            <AnimatePresence mode="wait">
+              {step === "email" ? (
+                <motion.form
+                  key="email-step"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleRequestOtp();
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="admin-email"
+                      className="text-sm font-medium leading-none flex mb-2"
+                    >
+                      Admin Email
+                    </label>
+                    <Input
+                      id="admin-email"
+                      type="email"
+                      placeholder="admin@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="h-14 font-semibold"
+                      autoFocus
+                    />
+                    {error && (
+                      <p className="text-xs text-red-600">{error}</p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={!email.trim() || loading}
+                    className="w-full h-14 rounded-xl text-sm font-bold tracking-wide uppercase"
+                  >
+                    {loading ? (
+                      <motion.span
+                        animate={{ opacity: [1, 0.4, 1] }}
+                        transition={{ duration: 1.2, repeat: Infinity }}
+                      >
+                        Sending…
+                      </motion.span>
+                    ) : (
+                      <>
+                        Send Login Code <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </motion.form>
+              ) : (
+                <motion.form
+                  key="otp-step"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleVerifyAndCreate();
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="admin-otp"
+                      className="text-sm flex mb-4 font-medium leading-none"
+                    >
+                      6-Digit Code
+                    </label>
+                    <Input
+                      id="admin-otp"
+                      type="text"
+                      placeholder="123456"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      className="h-14 text-center tracking-widest text-lg font-mono"
+                      maxLength={6}
+                      autoFocus
+                    />
+                    {error && (
+                      <p className="text-xs text-red-600">{error}</p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={otp.length < 6 || loading}
+                    className="w-full h-14 rounded-xl text-sm font-bold tracking-wide uppercase"
+                  >
+                    {loading ? (
+                      <motion.span
+                        animate={{ opacity: [1, 0.4, 1] }}
+                        transition={{ duration: 1.2, repeat: Infinity }}
+                      >
+                        Verifying & Creating…
+                      </motion.span>
+                    ) : (
+                      "Verify & Create Session"
+                    )}
+                  </Button>
+
+                  <div className="text-center mt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStep("email");
+                        setError("");
+                      }}
+                      className="text-xs text-muted-foreground hover:text-black hover:underline"
+                    >
+                      Back to Email
+                    </button>
+                  </div>
+                </motion.form>
+              )}
+            </AnimatePresence>
+
+            <p className="text-xs text-muted-foreground text-center mt-6">
+              Participants will join via QR code after session creation
+            </p>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }
