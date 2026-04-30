@@ -12,7 +12,7 @@ export const ROUND_DURATION_SECONDS = 60;
 // Types
 // ============================================================
 
-export type RoomState = "lobby" | "drawing" | "waiting" | "synthesis";
+export type RoomState = "lobby" | "drawing" | "waiting" | "synthesis" | "chat" | "ended";
 
 export interface Participant {
   name: string;

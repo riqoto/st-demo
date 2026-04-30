@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import RoomHeader from "@/components/RoomHeader";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import { updateRoomState } from "@/lib/firebaseService";
 
 interface Message {
   id: string;
@@ -237,6 +238,19 @@ export default function ChatPage({
         </div>
 
         <div className="flex justify-end items-center gap-2">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={async () => {
+              if (confirm("Are you sure you want to end the session entirely? This will notify all participants.")) {
+                await updateRoomState(roomId, "ended");
+              }
+            }}
+            className="flex items-center gap-2 h-9 rounded-xl px-4 text-xs font-black uppercase tracking-wider transition-all"
+          >
+            <span className="hidden sm:inline">End Session</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"

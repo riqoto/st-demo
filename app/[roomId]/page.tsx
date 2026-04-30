@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { motion } from "framer-motion";
-import { Wifi, Loader2 } from "lucide-react";
+import { Wifi, Loader2, Sparkles, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,7 +16,7 @@ import DrawingCanvas from "@/components/DrawingCanvas";
 import { subscribeToRoom, joinRoom, submitDrawing } from "@/lib/firebaseService";
 import type { Room } from "@/lib/types";
 
-type ParticipantState = "join" | "lobby" | "drawing" | "waiting";
+type ParticipantState = "join" | "lobby" | "drawing" | "waiting" | "ended";
 
 export default function ParticipantPage({
   params,
@@ -29,31 +29,53 @@ export default function ParticipantPage({
   const [error, setError] = useState("");
   const [room, setRoom] = useState<Room | null>(null);
   const [localState, setLocalState] = useState<ParticipantState>("join");
-  const [lastDrawnRound, setLastDrawnRound] = useState(0);
 
-  // Subscribe to real-time room state after joining
+  // On mount, restore username if available
   useEffect(() => {
-    if (!joined) return;
+    const storedUser = localStorage.getItem("sketchsync_user");
+    if (storedUser) setUsername(storedUser);
+  }, []);
+
+  // Subscribe to real-time room state
+  useEffect(() => {
+    if (!roomId) return;
     const unsubscribe = subscribeToRoom(roomId, (r) => {
       if (r) {
         setRoom(r);
 
+        // Check auto-join persistence
+        let isParticipant = joined;
+        if (!isParticipant && username) {
+          if (r.participants.some((p) => p.name === username.trim())) {
+            isParticipant = true;
+            setJoined(true);
+          }
+        }
+
+        // If not joined, remain on join screen
+        if (!isParticipant) return;
+
+        // Check if the current user has already submitted a drawing for this round
+        const hasDrawnCurrentRound = r.drawings?.some(
+          (d) => d.participantName === username.trim() && d.round === r.currentRound
+        );
+
         // Transition states based on room state
         if (r.state === "lobby") {
           setLocalState("lobby");
-        } else if (r.state === "drawing" && r.currentRound > lastDrawnRound) {
+        } else if (r.state === "drawing" && !hasDrawnCurrentRound) {
           setLocalState("drawing");
-        } else if (r.state === "drawing" && r.currentRound <= lastDrawnRound) {
+        } else if (r.state === "drawing" && hasDrawnCurrentRound) {
           setLocalState("waiting");
-        } else if (r.state === "waiting") {
+        } else if (r.state === "waiting" || r.state === "synthesis" || r.state === "chat") {
           setLocalState("waiting");
-        } else if (r.state === "synthesis") {
-          setLocalState("waiting");
+        } else if (r.state === "ended") {
+          setLocalState("ended");
         }
       }
     });
     return () => unsubscribe();
-  }, [joined, roomId, lastDrawnRound]);
+  }, [joined, roomId, username]);
 
   const handleJoin = async () => {
     const name = username.trim();
@@ -62,6 +84,7 @@ export default function ParticipantPage({
 
     const result = await joinRoom(roomId, name);
     if (result.success) {
+      localStorage.setItem("sketchsync_user", name);
       setJoined(true);
       setLocalState("lobby");
     } else {
@@ -74,7 +97,7 @@ export default function ParticipantPage({
       participantName: username.trim(),
       base64,
     });
-    setLastDrawnRound(room?.currentRound ?? 0);
+    // The immediate local fallback. Real state resolves via Firebase listener above.
     setLocalState("waiting");
   };
 
@@ -168,6 +191,32 @@ export default function ParticipantPage({
     return (
       <div className="flex flex-col flex-1 bg-soft-gray">
         <DrawingCanvas item={currentItem} onSubmit={handleDrawingSubmit} />
+      </div>
+    );
+  }
+
+  // ── Ended ──
+  if (localState === "ended") {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center bg-soft-gray px-4 gap-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center space-y-6 max-w-sm"
+        >
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-primary shadow-bold rotate-3">
+            <PenTool className="h-10 w-10 text-white" />
+          </div>
+          <div className="space-y-3">
+            <h2 className="text-3xl font-black tracking-tighter uppercase">All Rounds Ended!</h2>
+            <p className="text-base text-muted-foreground font-medium leading-relaxed">
+              The creative session is now complete. Great work! You can safely close this tab now.
+            </p>
+          </div>
+          <div className="pt-4">
+            <RoomHeader roomId={roomId.toUpperCase()} />
+          </div>
+        </motion.div>
       </div>
     );
   }

@@ -1,8 +1,7 @@
-"use client";
-
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Sparkles, Image as ImageIcon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, Image as ImageIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Drawing } from "@/lib/types";
 import { updateRoomState } from "@/lib/firebaseService";
@@ -14,11 +13,10 @@ interface SynthesisViewProps {
 
 export default function SynthesisView({ roomId, drawings }: SynthesisViewProps) {
   const router = useRouter();
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const handleGenerate = async () => {
-    // Optionally we mark the room state as 'chat' instead of 'synthesis', 
-    // but redirecting the admin is sufficient.
-    await updateRoomState(roomId, "synthesis"); 
+    await updateRoomState(roomId, "chat");
     router.push(`/admin/${roomId}/chat`);
   };
 
@@ -45,17 +43,17 @@ export default function SynthesisView({ roomId, drawings }: SynthesisViewProps) 
           <p className="text-sm">No drawings received yet.</p>
         </div>
       ) : (
-        <div className="w-full overflow-x-auto rounded-xl border border-gray-300 bg-white shadow-soft">
+        <div className="w-full overflow-x-auto rounded-xl border border-gray-300 bg-white shadow-soft font-bold">
           <table className="w-full text-sm text-center border-collapse">
             <thead>
               <tr className="border-b border-gray-300 bg-secondary/30">
-                <th className="p-4 font-semibold text-muted-foreground text-left align-middle border-r border-gray-300">
+                <th className="p-4 font-black tracking-tight text-left align-middle border-r border-gray-300">
                   Participant
                 </th>
                 {items.map((item) => (
                   <th
                     key={item}
-                    className="p-4 font-bold uppercase tracking-wider text-xs border-r border-gray-300 last:border-r-0"
+                    className="p-4 font-black uppercase tracking-wider text-xs border-r border-gray-300 last:border-r-0"
                   >
                     {item}
                   </th>
@@ -72,7 +70,7 @@ export default function SynthesisView({ roomId, drawings }: SynthesisViewProps) 
                       : ""
                   }
                 >
-                  <td className="p-4 font-medium text-left align-middle border-r border-gray-300">
+                  <td className="p-4 font-black text-left align-middle border-r border-gray-300">
                     {user}
                   </td>
                   {items.map((item) => {
@@ -84,7 +82,10 @@ export default function SynthesisView({ roomId, drawings }: SynthesisViewProps) 
                         key={`${user}-${item}`}
                         className="p-3 align-middle border-r border-gray-300 last:border-r-0"
                       >
-                        <div className="mx-auto h-[80px] w-[80px] rounded-lg border border-gray-300 bg-secondary/10 flex items-center justify-center overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                        <div
+                          onClick={() => d?.base64 && setSelectedImage(d.base64)}
+                          className={`mx-auto h-[80px] w-[80px] rounded-lg border border-gray-300 bg-secondary/10 flex items-center justify-center overflow-hidden shadow-sm transition-all ${d?.base64 ? 'cursor-zoom-in hover:border-primary hover:shadow-md active:scale-95' : ''}`}
+                        >
                           {d?.base64 ? (
                             <img
                               src={d.base64}
@@ -105,14 +106,6 @@ export default function SynthesisView({ roomId, drawings }: SynthesisViewProps) 
         </div>
       )}
 
-      {/* Lottie Animation Placeholder (Available for embedding your script) */}
-      {/* 
-        <!-- Lottie Animation Placeholder -->
-        <div className="w-full h-32 my-4 rounded-xl border border-dashed flex items-center justify-center">
-           <p className="text-xs text-muted-foreground">Lottie Animation Goes Here</p>
-        </div>
-      */}
-
       {/* Generate Button */}
       <Button
         onClick={handleGenerate}
@@ -121,6 +114,43 @@ export default function SynthesisView({ roomId, drawings }: SynthesisViewProps) 
         <Sparkles className="h-5 w-5 mr-2" />
         Submit to AI Chat
       </Button>
+
+      {/* Image Modal */}
+      <AnimatePresence>
+        {selectedImage && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/90 backdrop-blur-sm"
+              onClick={() => setSelectedImage(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="relative max-w-full max-h-full bg-white p-4 rounded-3xl border-4 border-primary shadow-bold"
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute -top-12 right-0 text-white hover:bg-white/20 rounded-full h-10 w-10"
+                onClick={() => setSelectedImage(null)}
+              >
+                <X className="h-6 w-6" />
+              </Button>
+              <div className="bg-white rounded-xl overflow-hidden border border-gray-200">
+                <img
+                  src={selectedImage}
+                  alt="Full preview"
+                  className="max-w-[90vw] max-h-[80vh] object-contain"
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
