@@ -1,13 +1,14 @@
 "use client";
 
 import { use, useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp, Sparkles, Settings2, SlidersHorizontal, User, X, PenTool, Image, Pencil, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import RoomHeader from "@/components/RoomHeader";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import { updateRoomState } from "@/lib/firebaseService";
+import { restartRoom } from "@/lib/firebaseService";
 
 interface Message {
   id: string;
@@ -134,6 +135,7 @@ export default function ChatPage({
   params: Promise<{ roomId: string }>;
 }) {
   const { roomId } = use(params);
+  const router = useRouter();
 
   // Core states
   const [messages, setMessages] = useState<Message[]>([]);
@@ -242,13 +244,14 @@ export default function ChatPage({
             variant="destructive"
             size="sm"
             onClick={async () => {
-              if (confirm("Are you sure you want to end the session entirely? This will notify all participants.")) {
-                await updateRoomState(roomId, "ended");
+              if (confirm("Are you sure you want to restart the session? All drawings will be cleared and you'll return to the lobby.")) {
+                await restartRoom(roomId);
+                router.push(`/admin/${roomId}`);
               }
             }}
             className="flex items-center gap-2 h-9 rounded-xl px-4 text-xs font-black uppercase tracking-wider transition-all"
           >
-            <span className="hidden sm:inline">End Session</span>
+            <span className="hidden sm:inline">Restart Room</span>
           </Button>
 
           <Button

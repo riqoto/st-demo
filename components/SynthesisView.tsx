@@ -16,7 +16,7 @@ export default function SynthesisView({ roomId, drawings }: SynthesisViewProps) 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const handleGenerate = async () => {
-    await updateRoomState(roomId, "chat");
+    await updateRoomState(roomId, "ended");
     router.push(`/admin/${roomId}/chat`);
   };
 

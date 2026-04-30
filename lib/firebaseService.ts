@@ -219,6 +219,17 @@ export async function advanceRound(roomId: string): Promise<void> {
   }
 }
 
+/** Restart an existing room, clearing drawings but keeping participants */
+export async function restartRoom(roomId: string): Promise<void> {
+  const id = roomId.toUpperCase();
+  await update(ref(db, `rooms/${id}`), {
+    state: "lobby",
+    currentRound: 0,
+    drawings: null, // Clear all drawings
+  });
+}
+
+
 /** Submit a drawing */
 export async function submitDrawing(
   roomId: string,
