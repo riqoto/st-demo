@@ -3,8 +3,23 @@
 // ============================================================
 
 /** Items participants will be asked to draw, one per round */
-export const DRAWING_ITEMS = ["cat", "house", "tree"];
-
+export const DRAWING_ITEMS = [
+  "cat",
+  "house",
+  "tree",
+  "sun",
+  "fish",
+  "bird",
+  "car",
+  "flower",
+  "boat",
+  "apple",
+  "star",
+  "cloud",
+  "bicycle",
+  "mushroom",
+  "butterfly",
+];
 /** Seconds each drawing round lasts */
 export const ROUND_DURATION_SECONDS = 60;
 
