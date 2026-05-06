@@ -44,7 +44,7 @@ export default function ChatPage({
   const [stepIndex, setStepIndex] = useState(0);
 
   useEffect(() => {
-    const adminEmail = localStorage.getItem("sketchsync_admin_email");
+    const adminEmail = localStorage.getItem("sketch_admin_email");
     if (!adminEmail) {
       router.push("/");
     }
@@ -279,7 +279,7 @@ export default function ChatPage({
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="SketchSync AI'a mesaj gönder..."
+                  placeholder="Sketch AI'a mesaj gönder..."
                   className="flex-1 max-h-[200px] min-h-[44px] bg-transparent resize-none outline-none py-3 px-4 text-sm disabled:opacity-50"
                   disabled={isGenerating}
                   rows={1}

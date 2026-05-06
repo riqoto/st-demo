@@ -27,7 +27,7 @@ export default function AdminDashboardPage({
   // Get the origin for QR code
   useEffect(() => {
     setOrigin(window.location.origin);
-    const adminEmail = localStorage.getItem("sketchsync_admin_email");
+    const adminEmail = localStorage.getItem("sketch_admin_email");
     if (!adminEmail) {
       router.push("/");
     }

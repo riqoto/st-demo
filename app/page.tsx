@@ -26,7 +26,7 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem("sketchsync_admin_token");
+      const token = localStorage.getItem("sketch_admin_token");
       if (token) {
         const { validateSession } = await import("@/lib/firebaseService");
         const res = await validateSession(token);
@@ -85,8 +85,8 @@ export default function AdminLoginPage() {
       // Valid OTP. Create session locally
       const { createSession } = await import("@/lib/firebaseService");
       const token = await createSession(email.trim());
-      localStorage.setItem("sketchsync_admin_token", token);
-      localStorage.setItem("sketchsync_admin_email", email.trim());
+      localStorage.setItem("sketch_admin_token", token);
+      localStorage.setItem("sketch_admin_email", email.trim());
       
       setStep("create");
     } catch (err: any) {
@@ -287,8 +287,8 @@ export default function AdminLoginPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        localStorage.removeItem("sketchsync_admin_token");
-                        localStorage.removeItem("sketchsync_admin_email");
+                        localStorage.removeItem("sketch_admin_token");
+                        localStorage.removeItem("sketch_admin_email");
                         setStep("email");
                         setEmail("");
                       }}

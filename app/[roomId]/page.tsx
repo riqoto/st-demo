@@ -32,7 +32,7 @@ export default function ParticipantPage({
 
   // On mount, restore username if available
   useEffect(() => {
-    const storedUser = localStorage.getItem("sketchsync_user");
+    const storedUser = localStorage.getItem("sketch_user");
     if (storedUser) setUsername(storedUser);
   }, []);
 
@@ -84,7 +84,7 @@ export default function ParticipantPage({
 
     const result = await joinRoom(roomId, name);
     if (result.success) {
-      localStorage.setItem("sketchsync_user", name);
+      localStorage.setItem("sketch_user", name);
       setJoined(true);
       setLocalState("lobby");
     } else {
