@@ -115,7 +115,7 @@ export default function ParticipantPage({
         >
           <Card className="shadow-soft-xl border border-gray-300">
             <CardHeader className="text-center pb-2">
-              <CardTitle className="text-xl font-bold">Join Room</CardTitle>
+              <CardTitle className="text-xl font-bold">Odaya Katıl</CardTitle>
               <div className="mt-2">
                 <RoomHeader roomId={roomId.toUpperCase()} />
               </div>
@@ -133,11 +133,11 @@ export default function ParticipantPage({
                     htmlFor="username"
                     className="text-sm font-medium leading-none flex mb-4"
                   >
-                    What is your name?
+                    Adınız Nedir?
                   </label>
                   <Input
                     id="username"
-                    placeholder="Enter your name"
+                    placeholder="İsminizi girin"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="h-14"
@@ -152,7 +152,7 @@ export default function ParticipantPage({
                   disabled={!username.trim()}
                   className="w-full h-14 rounded-xl text-sm font-bold uppercase tracking-wide"
                 >
-                  Join
+                  Katıl
                 </Button>
               </form>
             </CardContent>
@@ -175,9 +175,9 @@ export default function ParticipantPage({
             <Wifi className="h-7 w-7 text-foreground" />
           </div>
           <div className="space-y-1">
-            <h2 className="text-lg font-bold">Connected!</h2>
+            <h2 className="text-lg font-bold">Bağlanıldı!</h2>
             <p className="text-sm text-muted-foreground">
-              Waiting for admin to start the session…
+              Yöneticinin oturumu başlatması bekleniyor…
             </p>
           </div>
           <RoomHeader roomId={roomId.toUpperCase()} />
@@ -190,7 +190,7 @@ export default function ParticipantPage({
   if (localState === "drawing") {
     return (
       <div className="flex flex-col flex-1 bg-soft-gray">
-        <DrawingCanvas item={currentItem} onSubmit={handleDrawingSubmit} />
+        <DrawingCanvas item={currentItem} roundEndsAt={room?.roundEndsAt} onSubmit={handleDrawingSubmit} />
       </div>
     );
   }
@@ -208,9 +208,9 @@ export default function ParticipantPage({
             <PenTool className="h-10 w-10 text-white" />
           </div>
           <div className="space-y-3">
-            <h2 className="text-3xl font-black tracking-tighter uppercase">All Rounds Ended!</h2>
+            <h2 className="text-3xl font-black tracking-tighter uppercase">Tüm Turlar Bitti!</h2>
             <p className="text-base text-muted-foreground font-medium leading-relaxed">
-              The creative session is now complete. Great work! You can safely close this tab now.
+              Yaratıcı oturum tamamlandı. Harika iş! Artık bu sekmeyi kapatabilirsiniz.
             </p>
           </div>
           <div className="pt-4">
@@ -233,9 +233,9 @@ export default function ParticipantPage({
           <Loader2 className="h-7 w-7 text-foreground animate-spin" />
         </div>
         <div className="space-y-1">
-          <h2 className="text-lg font-bold">Drawing sent!</h2>
+          <h2 className="text-lg font-bold">Çizim gönderildi!</h2>
           <p className="text-sm text-muted-foreground">
-            Please wait for the next round.
+            Lütfen sonraki turu bekleyin.
           </p>
         </div>
       </motion.div>

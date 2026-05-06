@@ -55,7 +55,7 @@ export function useRoomChat(roomId: string, userId: string) {
 
         if (lastAssistantKey) {
           update(ref(db, `rooms/${roomId}/messages/${lastAssistantKey}`), {
-            text: "Masterpiece complete!",
+            text: "Harika eser tamamlandı!",
             resultImage: base64,
           });
         }
@@ -83,7 +83,7 @@ export function useRoomChat(roomId: string, userId: string) {
       // 2. Placeholder assistant mesajı
       await push(msgListRef, {
         userId: "ai",
-        text: "Synthesizing your vision...",
+        text: "Vizyonunuz sentezleniyor...",
         role: "assistant",
         timestamp: Date.now() + 1,
       });

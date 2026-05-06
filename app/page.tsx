@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pencil, ArrowRight, PenTool } from "lucide-react";
@@ -18,14 +18,31 @@ import { createRoom, verifyOtp } from "@/lib/firebaseService";
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
-  const [step, setStep] = useState<"email" | "otp">("email");
+  const [step, setStep] = useState<"email" | "otp" | "create">("email");
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [error, setError] = useState("");
   const router = useRouter();
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem("sketchsync_admin_token");
+      if (token) {
+        const { validateSession } = await import("@/lib/firebaseService");
+        const res = await validateSession(token);
+        if (res.valid && res.email) {
+          setEmail(res.email);
+          setStep("create");
+        }
+      }
+      setCheckingAuth(false);
+    };
+    checkAuth();
+  }, []);
+
   const handleRequestOtp = async () => {
     if (!email.trim() || !email.includes("@")) {
-      setError("Please enter a valid email");
+      setError("Lütfen geçerli bir e-posta girin");
       return;
     }
     setLoading(true);
@@ -40,7 +57,7 @@ export default function AdminLoginPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to send code");
+        throw new Error(data.error || "Kod gönderilemedi");
       }
 
       setStep("otp");
@@ -53,7 +70,7 @@ export default function AdminLoginPage() {
 
   const handleVerifyAndCreate = async () => {
     if (!otp.trim() || otp.length < 6) {
-      setError("Please enter the 6-digit code");
+      setError("Lütfen 6 haneli kodu girin");
       return;
     }
     setLoading(true);
@@ -62,10 +79,24 @@ export default function AdminLoginPage() {
     try {
       const result = await verifyOtp(email.trim(), otp.trim());
       if (!result.valid) {
-        throw new Error(result.error || "Invalid code");
+        throw new Error(result.error || "Geçersiz kod");
       }
 
-      // Valid OTP. Create room.
+      // Valid OTP. Create session locally
+      const { createSession } = await import("@/lib/firebaseService");
+      const token = await createSession(email.trim());
+      localStorage.setItem("sketchsync_admin_token", token);
+      localStorage.setItem("sketchsync_admin_email", email.trim());
+      
+      setStep("create");
+    } catch (err: any) {
+    }
+  };
+
+  const handleCreateRoom = async () => {
+    setLoading(true);
+    setError("");
+    try {
       const room = await createRoom(email.trim());
       router.push(`/admin/${room.id}`);
     } catch (err: any) {
@@ -73,6 +104,13 @@ export default function AdminLoginPage() {
       setLoading(false);
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center bg-white px-4">
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center bg-white px-4">
@@ -93,7 +131,7 @@ export default function AdminLoginPage() {
         <Card className="border-1 border-border shadow-bold rounded-xl overflow-hidden">
           <CardHeader className="text-left pb-6 pt-8">
             <CardTitle className="text-xl font-extrabold tracking-tight">
-              Sign in as Admin
+              Yönetici Girişi
             </CardTitle>
           </CardHeader>
 
@@ -116,7 +154,7 @@ export default function AdminLoginPage() {
                       htmlFor="admin-email"
                       className="text-sm font-medium leading-none flex mb-2"
                     >
-                      Admin Email
+                      Yönetici E-posta
                     </label>
                     <Input
                       id="admin-email"
@@ -142,16 +180,16 @@ export default function AdminLoginPage() {
                         animate={{ opacity: [1, 0.4, 1] }}
                         transition={{ duration: 1.2, repeat: Infinity }}
                       >
-                        Sending…
+                        Gönderiliyor…
                       </motion.span>
                     ) : (
                       <>
-                        Send Login Code <ArrowRight className="ml-2 h-4 w-4" />
+                        Giriş Kodu Gönder <ArrowRight className="ml-2 h-4 w-4" />
                       </>
                     )}
                   </Button>
                 </motion.form>
-              ) : (
+              ) : step === "otp" ? (
                 <motion.form
                   key="otp-step"
                   initial={{ opacity: 0, x: -10 }}
@@ -168,7 +206,7 @@ export default function AdminLoginPage() {
                       htmlFor="admin-otp"
                       className="text-sm flex mb-4 font-medium leading-none"
                     >
-                      6-Digit Code
+                      6-Haneli Kod
                     </label>
                     <Input
                       id="admin-otp"
@@ -195,10 +233,10 @@ export default function AdminLoginPage() {
                         animate={{ opacity: [1, 0.4, 1] }}
                         transition={{ duration: 1.2, repeat: Infinity }}
                       >
-                        Verifying & Creating…
+                        Doğrulanıyor…
                       </motion.span>
                     ) : (
-                      "Verify & Create Session"
+                      "Doğrula"
                     )}
                   </Button>
 
@@ -211,15 +249,60 @@ export default function AdminLoginPage() {
                       }}
                       className="text-xs text-muted-foreground hover:text-black hover:underline"
                     >
-                      Back to Email
+                      E-posta sayfasına dön
                     </button>
                   </div>
                 </motion.form>
+              ) : (
+                <motion.div
+                  key="create-step"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  className="space-y-6"
+                >
+                  <div className="text-center space-y-2 pb-4">
+                    <p className="text-sm font-medium text-muted-foreground">Kullanıcı:</p>
+                    <p className="font-bold">{email}</p>
+                  </div>
+                  
+                  <Button
+                    onClick={handleCreateRoom}
+                    disabled={loading}
+                    className="w-full h-14 rounded-xl text-sm font-bold tracking-wide uppercase"
+                  >
+                    {loading ? (
+                      <motion.span
+                        animate={{ opacity: [1, 0.4, 1] }}
+                        transition={{ duration: 1.2, repeat: Infinity }}
+                      >
+                        Oda Oluşturuluyor…
+                      </motion.span>
+                    ) : (
+                      "Yeni Çizim Odası Oluştur"
+                    )}
+                  </Button>
+
+                  <div className="text-center mt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        localStorage.removeItem("sketchsync_admin_token");
+                        localStorage.removeItem("sketchsync_admin_email");
+                        setStep("email");
+                        setEmail("");
+                      }}
+                      className="text-xs text-red-600 hover:text-red-800 hover:underline"
+                    >
+                      Çıkış Yap
+                    </button>
+                  </div>
+                </motion.div>
               )}
             </AnimatePresence>
 
             <p className="text-xs text-muted-foreground text-center mt-6">
-              Participants will join via QR code after session creation
+              Oturum oluşturulduktan sonra katılımcılar QR kod ile odaya katılabilir
             </p>
           </CardContent>
         </Card>

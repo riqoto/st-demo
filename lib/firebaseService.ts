@@ -47,6 +47,7 @@ function snapshotToRoom(roomId: string, data: Record<string, unknown>): Room {
     items: (data.items as string[]) ?? [...DRAWING_ITEMS],
     participants,
     drawings,
+    roundEndsAt: (data.roundEndsAt as number) || undefined,
   };
 }
 
@@ -210,9 +211,11 @@ export async function advanceRound(roomId: string): Promise<void> {
   const items = (data.items as string[]) ?? [];
 
   if (currentRound < items.length) {
+    const { ROUND_DURATION_SECONDS } = await import("./types");
     await update(ref(db, `rooms/${id}`), {
       currentRound: currentRound + 1,
       state: "drawing",
+      roundEndsAt: Date.now() + ROUND_DURATION_SECONDS * 1000,
     });
   } else {
     await update(ref(db, `rooms/${id}`), { state: "synthesis" });

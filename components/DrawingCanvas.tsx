@@ -9,12 +9,18 @@ import { ROUND_DURATION_SECONDS } from "@/lib/types";
 
 interface DrawingCanvasProps {
   item: string;
+  roundEndsAt?: number;
   onSubmit: (base64: string) => void;
 }
 
-export default function DrawingCanvas({ item, onSubmit }: DrawingCanvasProps) {
+export default function DrawingCanvas({ item, roundEndsAt, onSubmit }: DrawingCanvasProps) {
   const canvasRef = useRef<ReactSketchCanvasRef | null>(null);
-  const [timeLeft, setTimeLeft] = useState(ROUND_DURATION_SECONDS);
+  const [timeLeft, setTimeLeft] = useState(() => {
+    if (roundEndsAt) {
+      return Math.max(0, Math.floor((roundEndsAt - Date.now()) / 1000));
+    }
+    return ROUND_DURATION_SECONDS;
+  });
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = useCallback(async () => {
@@ -31,13 +37,21 @@ export default function DrawingCanvas({ item, onSubmit }: DrawingCanvasProps) {
   // Countdown timer
   useEffect(() => {
     if (submitted) return;
-    if (timeLeft <= 0) {
-      handleSubmit();
-      return;
-    }
-    const timer = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [timeLeft, submitted, handleSubmit]);
+    const interval = setInterval(() => {
+      const remaining = roundEndsAt 
+        ? Math.max(0, Math.floor((roundEndsAt - Date.now()) / 1000))
+        : timeLeft - 1;
+        
+      if (remaining <= 0) {
+        clearInterval(interval);
+        setTimeLeft(0);
+        handleSubmit();
+      } else {
+        setTimeLeft(remaining);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [submitted, roundEndsAt, handleSubmit, timeLeft]);
 
   const handleClear = () => {
     canvasRef.current?.clearCanvas();
@@ -62,9 +76,9 @@ export default function DrawingCanvas({ item, onSubmit }: DrawingCanvasProps) {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-black">
             <Send className="h-7 w-7 text-white" />
           </div>
-          <h2 className="text-xl font-bold">Drawing sent!</h2>
+          <h2 className="text-xl font-bold">Çizim gönderildi!</h2>
           <p className="text-muted-foreground text-sm">
-            Please wait for the next round.
+            Lütfen sonraki turu bekleyin.
           </p>
         </div>
       </motion.div>
@@ -81,7 +95,7 @@ export default function DrawingCanvas({ item, onSubmit }: DrawingCanvasProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-            Task
+            Görev
           </span>
           <span className="text-sm font-bold bg-secondary rounded-md px-2 py-0.5">
             {item}
@@ -122,14 +136,14 @@ export default function DrawingCanvas({ item, onSubmit }: DrawingCanvasProps) {
           className="flex-1 h-11 rounded-xl"
         >
           <Eraser className="h-4 w-4 mr-1.5" />
-          Clear
+          Temizle
         </Button>
         <Button
           onClick={handleSubmit}
           className="flex-1 h-11 rounded-xl font-bold"
         >
           <Send className="h-4 w-4 mr-1.5" />
-          Confirm Drawing
+          Çizimi Onayla
         </Button>
       </div>
     </motion.div>

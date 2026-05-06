@@ -18,14 +18,14 @@ export async function POST(req: Request) {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
+
     await storeOtp(email, otp);
 
     const { error: resendError } = await resend.emails.send({
-      from: "SketchSync <onboarding@resend.dev>",
+      from: "Sketch <onboarding@resend.dev>",
       to: [email],
-      subject: "Your SketchSync Admin Login Code",
-      text: `Your login code is: ${otp}`,
+      subject: "Sketch Yönetici Giriş Kodunuz",
+      text: `Giriş kodunuz: ${otp}`,
     });
 
     if (resendError) {

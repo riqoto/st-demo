@@ -49,4 +49,5 @@ export interface Room {
   currentRound: number;
   drawings: Drawing[];
   items: string[];
+  roundEndsAt?: number;
 }

@@ -25,15 +25,15 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
     <div className="flex flex-col h-[500px] border border-black/10 rounded-2xl bg-white shadow-sm overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-black/5 bg-gray-50/50">
-        <h3 className="font-semibold text-sm uppercase tracking-wider text-black/60">Class Chat & AI Synthesis</h3>
+        <h3 className="font-semibold text-sm uppercase tracking-wider text-black/60">Sınıf Sohbeti & Yapay Zeka</h3>
       </div>
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && !isGenerating && (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-2 opacity-40">
-            <p className="text-sm">No messages yet.</p>
-            <p className="text-xs">Describe what everyone should draw!</p>
+            <p className="text-sm">Henüz mesaj yok.</p>
+            <p className="text-xs">Herkesin ne çizeceğini yazarak belirleyin!</p>
           </div>
         )}
         
@@ -64,7 +64,7 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
           <div className="flex justify-start">
             <div className="bg-white border border-black/10 rounded-2xl px-4 py-3 text-sm text-black/60 shadow-sm flex items-center gap-3 animate-pulse">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>AI is sketching...</span>
+              <span>Yapay zeka çiziyor...</span>
             </div>
           </div>
         )}
@@ -75,7 +75,7 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
         <div className="relative flex items-center">
             <input
               className="w-full border border-black/10 rounded-full pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-black/20 transition-all placeholder:text-black/30"
-              placeholder="e.g., 'a cat sitting on a small house'..."
+              placeholder="Örn: 'küçük bir evde oturan bir kedi'..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}

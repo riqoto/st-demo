@@ -13,118 +13,7 @@ import { useRoomChat, type Message } from "@/hooks/useRoomChat";
 
 // Message type is now imported from useRoomChat
 
-const SettingsContent = ({
-  creativity,
-  setCreativity,
-  temperature,
-  setTemperature
-}: {
-  creativity: number[];
-  setCreativity: (val: number[]) => void;
-  temperature: number[];
-  setTemperature: (val: number[]) => void;
-}) => (
-  <div className="space-y-8">
-    <div>
-      <h3 className="text-lg font-bold flex items-center gap-2">
-        <SlidersHorizontal className="h-5 w-5 text-muted-foreground" />
-        Model Settings
-      </h3>
-      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-        Fine-tune the behavior of the AI when synthesizing the drawing sessions.
-      </p>
-    </div>
 
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium">Creativity Level</label>
-        <div className="flex items-center border-1 border-border rounded-xl bg-secondary/30 h-10 overflow-hidden w-32">
-          <button
-            type="button"
-            onClick={() => setCreativity([Math.max(0, creativity[0] - 5)])}
-            className="h-full px-3 hover:bg-secondary transition-colors border-r-1 border-border shrink-0"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-          <input
-            type="number"
-            value={creativity[0]}
-            onChange={(e) => {
-              const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-              setCreativity([val]);
-            }}
-            className="flex-1 w-full text-center text-sm font-black bg-transparent outline-none tabular-nums px-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
-          <button
-            type="button"
-            onClick={() => setCreativity([Math.min(100, creativity[0] + 5)])}
-            className="h-full px-3 hover:bg-secondary transition-colors border-l-1 border-border shrink-0"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-      <div className="py-2">
-        <Slider
-          value={creativity}
-          onValueChange={(val) => setCreativity(Array.isArray(val) ? (val as number[]) : [val as number])}
-          min={0}
-          max={100}
-          step={1}
-        />
-      </div>
-      <div className="flex justify-between text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
-        <span>Literal</span>
-        <span>Abstract</span>
-      </div>
-    </div>
-
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium">Temperature</label>
-        <div className="flex items-center border-1 border-border rounded-xl bg-secondary/30 h-10 overflow-hidden w-32">
-          <button
-            type="button"
-            onClick={() => setTemperature([Math.max(0, temperature[0] - 1)])}
-            className="h-full px-3 hover:bg-secondary transition-colors border-r-1 border-border shrink-0"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-          <input
-            type="number"
-            step="0.1"
-            value={(temperature[0] / 10).toFixed(1)}
-            onChange={(e) => {
-              const val = Math.min(1.0, Math.max(0, parseFloat(e.target.value) || 0));
-              setTemperature([Math.round(val * 10)]);
-            }}
-            className="flex-1 w-full text-center text-sm font-black bg-transparent outline-none tabular-nums px-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
-          <button
-            type="button"
-            onClick={() => setTemperature([Math.min(10, temperature[0] + 1)])}
-            className="h-full px-3 hover:bg-secondary transition-colors border-l-1 border-border shrink-0"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-      <div className="py-2">
-        <Slider
-          value={temperature}
-          onValueChange={(val) => setTemperature(Array.isArray(val) ? (val as number[]) : [val as number])}
-          min={0}
-          max={10}
-          step={1}
-        />
-      </div>
-      <div className="flex justify-between text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
-        <span>Precise</span>
-        <span>Random</span>
-      </div>
-    </div>
-  </div>
-);
 
 export default function ChatPage({
   params,
@@ -137,24 +26,29 @@ export default function ChatPage({
   // Core states from useRoomChat
   const { messages, isGenerating, sendMessage } = useRoomChat(roomId, "admin");
   const [input, setInput] = useState("");
-  const [showSettings, setShowSettings] = useState(false); // Mobile sheet
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Desktop sidebar
+  const [showCancelBtn, setShowCancelBtn] = useState(false);
 
-  // Setting states
-  const [creativity, setCreativity] = useState([50]);
-  const [temperature, setTemperature] = useState([7]);
+  // Setting states removed
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Generation status text rotation
   const generationSteps = [
-    "Analyzing your drawings...",
-    "Synthesizing creative insights...",
-    "Comparing artistic styles...",
-    "Generating the final masterpiece...",
-    "Applying the last touches...",
-    "Visualizing your collective imagination..."
+    "Çizimleriniz analiz ediliyor...",
+    "Yaratıcı fikirler sentezleniyor...",
+    "Sanatsal stiller karşılaştırılıyor...",
+    "Nihai şaheser oluşturuluyor...",
+    "Son rötuşlar yapılıyor...",
+    "Kolektif hayal gücünüz görselleştiriliyor..."
   ];
   const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    const adminEmail = localStorage.getItem("sketchsync_admin_email");
+    if (!adminEmail) {
+      router.push("/");
+    }
+  }, [router]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
@@ -175,28 +69,39 @@ export default function ChatPage({
   // Handle text rotation during generation
   useEffect(() => {
     let interval: NodeJS.Timeout;
+    let cancelTimer: NodeJS.Timeout;
+    
     if (isGenerating) {
       setStepIndex(0);
       interval = setInterval(() => {
         setStepIndex((prev) => (prev + 1) % generationSteps.length);
       }, 1800);
+      
+      cancelTimer = setTimeout(() => {
+        setShowCancelBtn(true);
+      }, 15000);
+    } else {
+      setShowCancelBtn(false);
     }
-    return () => clearInterval(interval);
+    
+    return () => {
+      clearInterval(interval);
+      clearTimeout(cancelTimer);
+    };
   }, [isGenerating, generationSteps.length]);
+
+  const handleCancelGeneration = () => {
+    import("firebase/database").then(({ ref, update }) => {
+      import("@/lib/firebase").then(({ db }) => {
+        update(ref(db, `rooms/${roomId}`), { status: "synthesis" });
+      });
+    });
+  };
 
   const handleSubmit = () => {
     if (!input.trim() || isGenerating) return;
 
-    // Map UI values to worker-friendly synthesis parameters
-    // Creativity 0-100 -> Strength 0.40 (Literal) to 0.90 (Abstract)
-    const strength = 0.4 + (creativity[0] / 100) * 0.5;
-
-    // Temperature 0.0-1.0 (0-10 on slider) -> Guidance Scale 1.0 (Random) to 15.0 (Precise)
-    // Note: Lower guidance scale in SD usually means more "artistic freedom" or unpredictability
-    // Here we map 0 (Random) to lower guidance and 10 (Precise) to higher guidance
-    const guidance_scale = 1.0 + (temperature[0] / 10) * 14.0;
-
-    sendMessage(input.trim(), { strength, guidance_scale });
+    sendMessage(input.trim(), { strength: 0.65, guidance_scale: 7.5 });
     setInput("");
   };
 
@@ -205,13 +110,6 @@ export default function ChatPage({
       e.preventDefault();
       handleSubmit();
     }
-  };
-
-  const settingsProps = {
-    creativity,
-    setCreativity,
-    temperature,
-    setTemperature
   };
 
   return (
@@ -235,32 +133,31 @@ export default function ChatPage({
             variant="destructive"
             size="sm"
             onClick={async () => {
-              if (confirm("Are you sure you want to restart the session? All drawings will be cleared and you'll return to the lobby.")) {
+              if (confirm("Oturumu yeniden başlatmak istediğinizden emin misiniz? Tüm çizimler silinecek ve bekleme odasına döneceksiniz.")) {
                 await restartRoom(roomId);
                 router.push(`/admin/${roomId}`);
               }
             }}
             className="flex items-center gap-2 h-9 rounded-xl px-4 text-xs font-black uppercase tracking-wider transition-all"
           >
-            <span className="hidden sm:inline">Restart Room</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setShowSettings(!showSettings); // Mobile
-              setIsSidebarOpen(!isSidebarOpen); // Desktop
-            }}
-            className="flex items-center gap-2 h-9 rounded-xl px-4 text-xs font-semibold border-border transition-all"
-          >
-            <Settings2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Settings</span>
+            <span className="hidden sm:inline">Odayı Sıfırla</span>
           </Button>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">
+        {showCancelBtn && isGenerating && (
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50">
+              <Button
+                variant="outline"
+                onClick={handleCancelGeneration}
+                className="flex items-center gap-2 h-10 rounded-full px-6 text-xs font-black uppercase tracking-wider transition-all border-red-500 text-red-600 hover:bg-red-50 shadow-lg animate-in slide-in-from-top-4"
+              >
+                <X className="h-4 w-4" />
+                <span>Çizimi İptal Et (Sistem Yanıt Vermiyor)</span>
+              </Button>
+          </div>
+        )}
 
         {/* Left Area: Main Chat Window */}
         <div className="flex-1 flex flex-col relative w-full h-full">
@@ -272,7 +169,7 @@ export default function ChatPage({
               {messages.length === 0 && !isGenerating && (
                 <div className="flex flex-col items-center justify-center flex-1 text-center opacity-50 space-y-4 my-auto mt-24">
                   <Sparkles className="h-12 w-12 text-muted-foreground" />
-                  <p className="text-sm max-w-sm">Use the prompt box to ask the AI assistant for insights or generations based on your room's drawings!</p>
+                  <p className="text-sm max-w-sm">Odadaki çizimlerden yola çıkarak yapay zekadan yeni görseller üretmesini isteyin!</p>
                 </div>
               )}
 
@@ -294,15 +191,18 @@ export default function ChatPage({
                       animate={showLiveGeneration ? {
                         backgroundColor: ["#f3f4f6", "#e5e7eb", "#f3f4f6"],
                         scale: [1, 1.05, 1],
-                      } : {}}
-                      transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                      } : {
+                        backgroundColor: msg.role === "assistant" ? "#f3f4f6" : "#000000",
+                        scale: 1,
+                      }}
+                      transition={showLiveGeneration ? { repeat: Infinity, duration: 2, ease: "easeInOut" } : { duration: 0.3 }}
                     >
                       {msg.role === "assistant" ? (
                         <motion.div
                           animate={showLiveGeneration ? {
                             rotate: [0, -45, 0],
                           } : { rotate: 0 }}
-                          transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                          transition={showLiveGeneration ? { repeat: Infinity, duration: 1.2, ease: "easeInOut" } : { duration: 0.3 }}
                         >
                           <PenTool className="h-4 w-4 text-muted-foreground" />
                         </motion.div>
@@ -313,7 +213,7 @@ export default function ChatPage({
 
                     <div className={`flex flex-col gap-1.5 ${msg.role === "user" ? "items-end" : "items-start"}`}>
                       <span className="text-xs font-semibold text-muted-foreground px-1">
-                        {msg.role === "assistant" ? "Sketch AI" : "You"}
+                        {msg.role === "assistant" ? "Sketch AI" : "Siz"}
                       </span>
                       <div className={`px-4 py-2.5 rounded-xl max-w-xl text-sm leading-relaxed ${msg.role === "user"
                         ? "bg-white border border-border text-foreground"
@@ -379,7 +279,7 @@ export default function ChatPage({
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Message SketchSync AI..."
+                  placeholder="SketchSync AI'a mesaj gönder..."
                   className="flex-1 max-h-[200px] min-h-[44px] bg-transparent resize-none outline-none py-3 px-4 text-sm disabled:opacity-50"
                   disabled={isGenerating}
                   rows={1}
@@ -400,54 +300,7 @@ export default function ChatPage({
             </div>
           </div>
         </div>
-
-        <AnimatePresence>
-          {isSidebarOpen && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 320, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="hidden md:flex bg-white border-l border-border flex-col shrink-0 z-10 overflow-hidden"
-            >
-              <div className="w-[320px] p-6">
-                <SettingsContent {...settingsProps} />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
       </div>
-
-      <AnimatePresence>
-        {showSettings && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 z-40 md:hidden backdrop-blur-sm"
-              onClick={() => setShowSettings(false)}
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 p-6 shadow-lg md:hidden border-t border-gray-300"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-12 h-1.5 bg-secondary rounded-full mx-auto" />
-                <Button variant="ghost" size="icon" className="absolute right-4 top-4 h-8 w-8 rounded-full" onClick={() => setShowSettings(false)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <SettingsContent {...settingsProps} />
-              <div className="h-6" />
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
       {/* Image Modal */}
       <AnimatePresence>

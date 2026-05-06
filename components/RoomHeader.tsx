@@ -31,7 +31,7 @@ export default function RoomHeader({ roomId }: RoomHeaderProps) {
 
   return (
     <div className="flex items-center justify-center gap-2">
-      <span className="text-sm text-muted-foreground font-medium">Room:</span>
+      <span className="text-sm text-muted-foreground font-medium">Oda:</span>
       <button
         onClick={handleCopy}
         className="group inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-sm font-mono font-bold tracking-widest transition-colors hover:bg-gray-200"

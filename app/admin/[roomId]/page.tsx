@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { Users, Play, ArrowRight, Loader2 } from "lucide-react";
@@ -21,10 +22,16 @@ export default function AdminDashboardPage({
   const [room, setRoom] = useState<Room | null>(null);
   const [origin, setOrigin] = useState("");
 
+  const router = useRouter();
+
   // Get the origin for QR code
   useEffect(() => {
     setOrigin(window.location.origin);
-  }, []);
+    const adminEmail = localStorage.getItem("sketchsync_admin_email");
+    if (!adminEmail) {
+      router.push("/");
+    }
+  }, [router]);
 
   // Subscribe to room state
   useEffect(() => {
@@ -35,6 +42,31 @@ export default function AdminDashboardPage({
   }, [roomId]);
 
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+
+  const advancingRef = useRef(false);
+  const handleNextRound = async () => {
+    if (advancingRef.current) return;
+    advancingRef.current = true;
+    // First set waiting, then advance
+    await updateRoomState(roomId, "waiting");
+    setTimeout(async () => {
+      await advanceRound(roomId);
+      advancingRef.current = false;
+    }, 500);
+  };
+
+  // Auto-advance
+  useEffect(() => {
+    if (!room || room.state !== "drawing" || !room.roundEndsAt) return;
+    
+    const interval = setInterval(() => {
+      if (Date.now() >= room.roundEndsAt!) {
+        clearInterval(interval);
+        handleNextRound();
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [room]);
 
   if (!room) {
     return (
@@ -54,14 +86,6 @@ export default function AdminDashboardPage({
 
   const handleStartSession = async () => {
     await advanceRound(roomId);
-  };
-
-  const handleNextRound = async () => {
-    // First set waiting, then advance
-    await updateRoomState(roomId, "waiting");
-    setTimeout(async () => {
-      await advanceRound(roomId);
-    }, 500);
   };
 
   // Synthesis
@@ -108,7 +132,7 @@ export default function AdminDashboardPage({
                 <p className="text-xs text-muted-foreground text-center max-w-[240px] break-all font-mono">
                   {participantUrl}
                 </p>
-                <Badge variant="secondary" className="text-[10px] uppercase font-bold">Click to Enlarge</Badge>
+                <Badge variant="secondary" className="text-[10px] uppercase font-bold">Büyütmek İçin Tıkla</Badge>
               </CardContent>
             </Card>
           </motion.div>
@@ -122,13 +146,18 @@ export default function AdminDashboardPage({
             className="text-center space-y-2"
           >
             <p className="text-sm text-muted-foreground uppercase tracking-wider font-medium">
-              Round {room.currentRound} of {totalRounds}
+              Tur {room.currentRound} / {totalRounds}
             </p>
             <p className="text-2xl font-bold">&ldquo;{currentItem}&rdquo;</p>
             {isDrawing && (
-              <p className="text-sm text-muted-foreground animate-pulse-gentle">
-                Drawing in progress…
-              </p>
+              <div className="flex flex-col items-center justify-center space-y-1">
+                <p className="text-sm font-bold text-red-600 animate-pulse">
+                  Kalan Süre: {Math.max(0, Math.floor((room.roundEndsAt! - Date.now()) / 1000))}s
+                </p>
+                <p className="text-sm text-muted-foreground animate-pulse-gentle">
+                  Çizim yapılıyor…
+                </p>
+              </div>
             )}
           </motion.div>
         )}
@@ -139,8 +168,8 @@ export default function AdminDashboardPage({
             <Users className="h-4 w-4" />
             <span>
               {room.participants.length === 0
-                ? "Waiting for players…"
-                : `${room.participants.length} participant${room.participants.length !== 1 ? "s" : ""}`}
+                ? "Oyuncu bekleniyor…"
+                : `${room.participants.length} katılımcı`}
             </span>
           </div>
 
@@ -170,7 +199,7 @@ export default function AdminDashboardPage({
         {isDrawing && (
           <div className="w-full max-w-md">
             <p className="text-xs text-muted-foreground mb-2">
-              Drawings received:{" "}
+              Gelen çizimler:{" "}
               {room.drawings.filter((d) => d.round === room.currentRound).length}{" "}
               / {room.participants.length}
             </p>
@@ -187,7 +216,7 @@ export default function AdminDashboardPage({
             className="w-full h-12 rounded-xl text-sm font-bold uppercase tracking-wide md:w-96"
           >
             <Play className="h-4 w-4 mr-2 " />
-            Start Drawing Session
+            Çizim Oturumunu Başlat
           </Button>
         )}
         {isDrawing && (
@@ -198,13 +227,13 @@ export default function AdminDashboardPage({
           >
             <ArrowRight className="h-4 w-4 mr-2" />
             {room.currentRound < totalRounds
-              ? "End Round & Next"
-              : "End Round & Synthesize"}
+              ? "Turu Bitir ve Sonrakine Geç"
+              : "Turu Bitir ve Üret"}
           </Button>
         )}
         {isWaiting && (
           <div className="text-center text-sm text-muted-foreground animate-pulse-gentle py-3">
-            Transitioning to next round…
+            Sonraki tura geçiliyor…
           </div>
         )}
       </div>
@@ -243,7 +272,7 @@ export default function AdminDashboardPage({
                 </div>
 
                 <div className="text-center space-y-2">
-                  <p className="text-2xl font-black tracking-tighter uppercase">Scan to Join</p>
+                  <p className="text-2xl font-black tracking-tighter uppercase">Katılmak İçin Okut</p>
                   <p className="text-muted-foreground font-mono text-sm">{participantUrl}</p>
                 </div>
 
@@ -252,7 +281,7 @@ export default function AdminDashboardPage({
                   variant="outline"
                   className="rounded-full px-8 h-12 font-bold uppercase tracking-widest border-2 hover:bg-gray-50"
                 >
-                  Close
+                  Kapat
                 </Button>
               </div>
             </motion.div>

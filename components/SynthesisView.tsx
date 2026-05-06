@@ -31,16 +31,16 @@ export default function SynthesisView({ roomId, drawings }: SynthesisViewProps) 
       className="flex flex-col gap-6 p-4 sm:p-6 max-w-4xl mx-auto w-full"
     >
       <div className="text-center space-y-1">
-        <h2 className="text-2xl font-bold tracking-tight">Final Synthesis</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Nihai Sentez</h2>
         <p className="text-sm text-muted-foreground">
-          Review all sketches before submitting them to the AI.
+          Yapay zekaya göndermeden önce tüm çizimleri inceleyin.
         </p>
       </div>
 
       {drawings.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
           <ImageIcon className="h-12 w-12 mb-3" />
-          <p className="text-sm">No drawings received yet.</p>
+          <p className="text-sm">Henüz hiçbir çizim gelmedi.</p>
         </div>
       ) : (
         <div className="w-full overflow-x-auto rounded-xl border border-gray-300 bg-white shadow-soft font-bold">
@@ -48,7 +48,7 @@ export default function SynthesisView({ roomId, drawings }: SynthesisViewProps) 
             <thead>
               <tr className="border-b border-gray-300 bg-secondary/30">
                 <th className="p-4 font-black tracking-tight text-left align-middle border-r border-gray-300">
-                  Participant
+                  Katılımcı
                 </th>
                 {items.map((item) => (
                   <th
@@ -112,7 +112,7 @@ export default function SynthesisView({ roomId, drawings }: SynthesisViewProps) 
         className="w-full h-14 rounded-xl text-sm font-bold uppercase tracking-wide mt-4"
       >
         <Sparkles className="h-5 w-5 mr-2" />
-        Submit to AI Chat
+        Yapay Zeka Sohbetine Gönder
       </Button>
 
       {/* Image Modal */}
