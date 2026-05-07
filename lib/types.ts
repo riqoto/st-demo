@@ -19,7 +19,7 @@ export const ITEM_TRANSLATIONS: Record<string, string> = {
 };
 
 /** Seconds each drawing round lasts */
-export const ROUND_DURATION_SECONDS = 60;
+export const ROUND_DURATION_SECONDS = 90;
 
 // ============================================================
 // Types
