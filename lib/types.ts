@@ -2,14 +2,22 @@
 // CONFIGURATION — Edit these values to customize the session
 // ============================================================
 
-/** Items participants will be asked to draw, one per round */
 export const DRAWING_ITEMS = [
-  "kedi",
-  "ev",
-  "güneş",
-  "çiçek",
-  "balık",
+  "cat",
+  "house",
+  "sun",
+  "tree",
+  "fish",
 ];
+
+export const ITEM_TRANSLATIONS: Record<string, string> = {
+  "cat": "Kedi",
+  "house": "Ev",
+  "sun": "Güneş",
+  "tree": "Ağaç",
+  "fish": "Balık",
+};
+
 /** Seconds each drawing round lasts */
 export const ROUND_DURATION_SECONDS = 60;
 

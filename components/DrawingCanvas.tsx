@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Eraser, Send } from "lucide-react";
 import { ReactSketchCanvas, type ReactSketchCanvasRef } from "react-sketch-canvas";
 import { Button } from "@/components/ui/button";
-import { ROUND_DURATION_SECONDS } from "@/lib/types";
+import { ROUND_DURATION_SECONDS, ITEM_TRANSLATIONS } from "@/lib/types";
 
 interface DrawingCanvasProps {
   item: string;
@@ -98,7 +98,7 @@ export default function DrawingCanvas({ item, roundEndsAt, onSubmit }: DrawingCa
             Görev
           </span>
           <span className="text-sm font-bold bg-secondary rounded-md px-2 py-0.5">
-            {item}
+            {ITEM_TRANSLATIONS[item] || item}
           </span>
         </div>
         <div

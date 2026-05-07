@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Image as ImageIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Drawing } from "@/lib/types";
+import { type Drawing, ITEM_TRANSLATIONS } from "@/lib/types";
 import { updateRoomState } from "@/lib/firebaseService";
 
 interface SynthesisViewProps {
@@ -55,7 +55,7 @@ export default function SynthesisView({ roomId, drawings }: SynthesisViewProps) 
                     key={item}
                     className="p-4 font-black uppercase tracking-wider text-xs border-r border-gray-300 last:border-r-0"
                   >
-                    {item}
+                    {ITEM_TRANSLATIONS[item] || item}
                   </th>
                 ))}
               </tr>
