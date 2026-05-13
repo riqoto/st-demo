@@ -7,7 +7,7 @@ import { ArrowUp, Sparkles, Settings2, SlidersHorizontal, User, X, PenTool, Imag
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import RoomHeader from "@/components/RoomHeader";
-// import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import WorkerMonitor from "@/components/WorkerMonitor";
 import { restartRoom } from "@/lib/firebaseService";
 import { useRoomChat, type Message } from "@/hooks/useRoomChat";
 
@@ -26,7 +26,6 @@ export default function ChatPage({
   // Core states from useRoomChat
   const { messages, isGenerating, sendMessage } = useRoomChat(roomId, "admin");
   const [input, setInput] = useState("");
-  const [showCancelBtn, setShowCancelBtn] = useState(false);
 
   // Setting states removed
 
@@ -76,27 +75,13 @@ export default function ChatPage({
       interval = setInterval(() => {
         setStepIndex((prev) => (prev + 1) % generationSteps.length);
       }, 1800);
-      
-      cancelTimer = setTimeout(() => {
-        setShowCancelBtn(true);
-      }, 15000);
-    } else {
-      setShowCancelBtn(false);
     }
     
     return () => {
       clearInterval(interval);
-      clearTimeout(cancelTimer);
     };
   }, [isGenerating, generationSteps.length]);
 
-  const handleCancelGeneration = () => {
-    import("firebase/database").then(({ ref, update }) => {
-      import("@/lib/firebase").then(({ db }) => {
-        update(ref(db, `rooms/${roomId}`), { status: "synthesis" });
-      });
-    });
-  };
 
   const handleSubmit = () => {
     if (!input.trim() || isGenerating) return;
@@ -116,48 +101,38 @@ export default function ChatPage({
     <div className="flex flex-col bg-white h-screen overflow-hidden">
 
       {/* Header spanning exactly across top */}
-      <div className="grid grid-cols-3 items-center border-b border-border bg-white py-3 px-6 shrink-0 z-20">
-        <div className="flex justify-start">
-          <RoomHeader roomId={roomId} />
-        </div>
-
-        <div className="flex justify-center items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
-            <PenTool className="h-4 w-4 text-white" />
+      <div className="border-b border-border bg-white py-3 px-6 shrink-0 z-20">
+        <div className="grid grid-cols-3 items-center">
+          <div className="flex justify-start">
+            <RoomHeader roomId={roomId} />
           </div>
-          <span className="text-xl tracking-tighter">Sketch</span>
-        </div>
 
-        <div className="flex justify-end items-center gap-2">
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={async () => {
-              if (confirm("Oturumu yeniden başlatmak istediğinizden emin misiniz? Tüm çizimler silinecek ve bekleme odasına döneceksiniz.")) {
-                await restartRoom(roomId);
-                router.push(`/admin/${roomId}`);
-              }
-            }}
-            className="flex items-center gap-2 h-9 rounded-xl px-4 text-xs font-black uppercase tracking-wider transition-all"
-          >
-            <span className="hidden sm:inline">Odayı Sıfırla</span>
-          </Button>
+          <div className="flex justify-center items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
+              <PenTool className="h-4 w-4 text-white" />
+            </div>
+            <span className="text-xl tracking-tighter">Sketch</span>
+          </div>
+
+          <div className="flex justify-end items-center gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={async () => {
+                if (confirm("Oturumu yeniden başlatmak istediğinizden emin misiniz? Tüm çizimler silinecek ve bekleme odasına döneceksiniz.")) {
+                  await restartRoom(roomId);
+                  router.push(`/admin/${roomId}`);
+                }
+              }}
+              className="flex items-center gap-2 h-9 rounded-xl px-4 text-xs font-black uppercase tracking-wider transition-all"
+            >
+              <span className="hidden sm:inline">Odayı Sıfırla</span>
+            </Button>
+          </div>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">
-        {showCancelBtn && isGenerating && (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50">
-              <Button
-                variant="outline"
-                onClick={handleCancelGeneration}
-                className="flex items-center gap-2 h-10 rounded-full px-6 text-xs font-black uppercase tracking-wider transition-all border-red-500 text-red-600 hover:bg-red-50 shadow-lg animate-in slide-in-from-top-4"
-              >
-                <X className="h-4 w-4" />
-                <span>Çizimi İptal Et (Sistem Yanıt Vermiyor)</span>
-              </Button>
-          </div>
-        )}
 
         {/* Left Area: Main Chat Window */}
         <div className="flex-1 flex flex-col relative w-full h-full">
@@ -341,6 +316,7 @@ export default function ChatPage({
         )}
       </AnimatePresence>
 
+      <WorkerMonitor roomId={roomId} />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import RoomHeader from "@/components/RoomHeader";
 import SynthesisView from "@/components/SynthesisView";
+import WorkerMonitor from "@/components/WorkerMonitor";
 import { subscribeToRoom, advanceRound, updateRoomState } from "@/lib/firebaseService";
 import type { Room } from "@/lib/types";
 
@@ -59,6 +60,14 @@ export default function AdminDashboardPage({
   useEffect(() => {
     if (!room || room.state !== "drawing" || !room.roundEndsAt) return;
     
+    const currentDrawings = room.drawings?.filter((d) => d.round === room.currentRound).length || 0;
+    const participantsCount = room.participants?.length || 0;
+    
+    if (participantsCount > 0 && currentDrawings >= participantsCount) {
+      handleNextRound();
+      return;
+    }
+
     const interval = setInterval(() => {
       if (Date.now() >= room.roundEndsAt!) {
         clearInterval(interval);
@@ -66,7 +75,7 @@ export default function AdminDashboardPage({
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [room]);
+  }, [room, handleNextRound]);
 
   if (!room) {
     return (
@@ -91,14 +100,17 @@ export default function AdminDashboardPage({
   // Synthesis
   if (isSynthesis) {
     return (
-      <div className="flex flex-col flex-1 bg-soft-gray">
-        <div className="border-b border-gray-300 bg-white py-3 px-4 shadow-soft">
-          <RoomHeader roomId={room.id} />
+      <>
+        <div className="flex flex-col flex-1 bg-soft-gray">
+          <div className="border-b border-gray-300 bg-white py-3 px-4 shadow-soft">
+            <RoomHeader roomId={room.id} />
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <SynthesisView roomId={room.id} drawings={room.drawings} />
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto">
-          <SynthesisView roomId={room.id} drawings={room.drawings} />
-        </div>
-      </div>
+        <WorkerMonitor roomId={room.id} />
+      </>
     );
   }
 
@@ -288,6 +300,7 @@ export default function AdminDashboardPage({
           </div>
         )}
       </AnimatePresence>
+      <WorkerMonitor roomId={room.id} />
     </div>
   );
 }
